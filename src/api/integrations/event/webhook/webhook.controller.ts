@@ -127,10 +127,18 @@ export class WebhookController extends EventController implements EventControlle
             const httpService = axios.create({
               baseURL,
               headers: webhookHeaders as Record<string, string> | undefined,
-              timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000,
+              timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 10000,
             });
 
-            await this.retryWebhookRequest(httpService, webhookData, `${origin}.sendData-Webhook`, baseURL, serverUrl);
+            // Enviar webhook sem bloquear o fluxo principal
+            this.retryWebhookRequest(httpService, webhookData, `${origin}.sendData-Webhook`, baseURL, serverUrl)
+              .catch(error => {
+                this.logger.error({
+                  local: `${origin}.sendData-Webhook`,
+                  message: `Falha no envio assíncrono: ${error?.message}`,
+                  url: baseURL,
+                });
+              });
           }
         } catch (error) {
           this.logger.error({
@@ -171,16 +179,23 @@ export class WebhookController extends EventController implements EventControlle
           if (regex.test(globalURL)) {
             const httpService = axios.create({
               baseURL: globalURL,
-              timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 30000,
+              timeout: webhookConfig.REQUEST?.TIMEOUT_MS ?? 10000,
             });
 
-            await this.retryWebhookRequest(
+            // Enviar webhook global sem bloquear o fluxo principal
+            this.retryWebhookRequest(
               httpService,
               webhookData,
               `${origin}.sendData-Webhook-Global`,
               globalURL,
               serverUrl,
-            );
+            ).catch(error => {
+              this.logger.error({
+                local: `${origin}.sendData-Webhook-Global`,
+                message: `Falha no envio assíncrono: ${error?.message}`,
+                url: globalURL,
+              });
+            });
           }
         } catch (error) {
           this.logger.error({

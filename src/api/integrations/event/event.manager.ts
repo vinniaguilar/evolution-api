@@ -125,13 +125,15 @@ export class EventManager {
     integration?: string[];
     extra?: Record<string, any>;
   }): Promise<void> {
-    await this.websocket.emit(eventData);
-    await this.rabbitmq.emit(eventData);
-    await this.nats.emit(eventData);
-    await this.sqs.emit(eventData);
-    await this.webhook.emit(eventData);
-    await this.pusher.emit(eventData);
-    await this.kafka.emit(eventData);
+    await Promise.all([
+      this.websocket.emit(eventData),
+      this.rabbitmq.emit(eventData),
+      this.nats.emit(eventData),
+      this.sqs.emit(eventData),
+      this.webhook.emit(eventData),
+      this.pusher.emit(eventData),
+      this.kafka.emit(eventData),
+    ]);
   }
 
   public async setInstance(instanceName: string, data: any): Promise<any> {
